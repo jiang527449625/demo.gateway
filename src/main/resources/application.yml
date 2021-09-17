@@ -1,0 +1,108 @@
+﻿server:
+  port: 7800
+  tomcat:
+    uri-encoding: UTF-8
+
+spring:
+  application:
+    name: demo-gateway
+  sleuth:
+    sampler:
+      percentage: 1.0
+  zipkin:
+    base-url: http://192.168.1.40:9411
+    sender:
+      type: rabbit
+  rabbitmq:
+    addresses: 192.168.1.40
+    port: 5672
+    username: admin
+    password: admin
+    listener:
+      direct:
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 5000
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 5000
+  redis:
+    host: 192.168.1.40
+    port: 6379
+    password: rootadmin
+    database: 1
+    # 连接超时时间
+    timeout: 10s
+    jedis:
+      pool:
+        max-active: 8
+        min-idle: 0
+        max-idle: 8
+        max-wait: -1ms
+
+eureka:
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://admin:admin@localhost:7000/eureka/
+  instance:
+    preferIpAddress: true
+
+ribbon:
+  ReadTimeout: 6000000
+  ConnectTimeout: 6000000
+  MaxAutoRetries: 0
+  MaxAutoRetriesNextServer: 1
+
+zuul:
+  add-host-header: true
+  sensitive-headers: Access-Control-Allow-Origin
+  ignored-headers: Access-Control-Allow-Origin,H-APP-Id,Token,APPToken
+  host:
+    maxPerRouteConnections: 6000000
+    maxTotalConnections: 6000000
+    socket-timeout-millis: 10000
+    connect-timeout-millis: 2000
+  routes:
+    demo-elasticsearch:
+      path: /elasticsearch/**
+      serviceId: demo-elasticsearch
+      stripPrefix: false
+    demo-sys:
+      path: /sys/**
+      serviceId: demo-sys
+      stripPrefix: false
+  ratelimit:
+    enabled: true
+    keyPrefix: ${spring.application.name}-rate-limit
+    behindProxy: true
+    repository: REDIS
+    policyList:
+      demo-sys:
+        #每秒多少个请求
+        - limit: 10
+          #客户端如果3秒内请求超过5次，服务端就抛出异常
+          refreshInterval: 20
+          type:
+            - origin
+#            - url=/sys/syslog/insertEs
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 6000000
+
+rounts:
+  security:
+    gateway: false
+    url:
+    auth:
+      gateway: true
+      url:
